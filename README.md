@@ -32,7 +32,7 @@ A modern web system for tracking plant samples, researchers, field locations, an
 1. **Clone the repository**
 
     ```bash
-    git clone <your-repo-url>
+    git clone https://github.com/Brigoliboon/plantbase.git
     cd plantbase
     ```
 
