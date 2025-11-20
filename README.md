@@ -128,6 +128,8 @@ You can extend or use the REST API in external tools.
 
 ## License
 
-MIT
+This repository is under a custom “view-only” license.  
+You may view and read the code for educational purposes only.  
+You may **not** modify, distribute, or use it outside of this project without permission.
 
----
+---                                                                                                                                                
