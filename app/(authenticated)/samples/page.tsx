@@ -237,7 +237,7 @@ export default function SamplesPage() {
   );
 
   return (
-    <MainLayout>
+    <>
       <Notification
         type={notification.type}
         message={notification.message}
@@ -488,7 +488,7 @@ export default function SamplesPage() {
           </form>
         </Modal>
       </div>
-    </MainLayout>
+    </>
   );
 }
 
