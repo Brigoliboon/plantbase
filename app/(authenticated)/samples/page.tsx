@@ -257,7 +257,7 @@ export default function SamplesPage() {
               Manage and view all plant samples
             </p>
           </div>
-          <Button onClick={() => handleOpenModal()}>
+          <Button className='flex' onClick={() => handleOpenModal()}>
             <Plus size={20} className="mr-2" />
             Add Sample
           </Button>
