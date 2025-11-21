@@ -61,24 +61,6 @@ export default function LocationPicker({onValueChanged}:any) {
         id="map"
         style={{ height: "400px", width: "100%" }}
       />
-      {coords && (
-        <div
-          style={{
-            background: "rgba(0, 0, 0, 0.5)",
-            color: "#fff",
-            position: "absolute",
-            bottom: "40px",
-            left: "10px",
-            padding: "5px 10px",
-            fontFamily: "monospace",
-            fontSize: "11px",
-            borderRadius: "3px"
-          }}
-        >
-          <p style={{ margin: 0 }}>Longitude: {coords.lng}</p>
-          <p style={{ margin: 0 }}>Latitude: {coords.lat}</p>
-        </div>
-      )}
     </>
   );
 }
