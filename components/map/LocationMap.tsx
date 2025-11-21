@@ -24,8 +24,8 @@ export default function LocationMap({ locations }: LocationMapProps) {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
-        center: [0, 51.5], // Default center (London)
-        zoom: 5,
+        center: [122, 13], // Default center (Philippines)
+        zoom: 4,
       });
     }
 
