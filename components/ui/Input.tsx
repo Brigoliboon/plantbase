@@ -7,7 +7,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-export default function Input({ label, error, className = '', ...props }: InputProps) {
+export default function Input({ label, error, disabled=false, className = '', ...props }: InputProps) {
   return (
     <div className="w-full">
       {label && (
@@ -16,6 +16,7 @@ export default function Input({ label, error, className = '', ...props }: InputP
         </label>
       )}
       <input
+      disabled={disabled}
         className={`
           w-full px-4 py-2 border rounded-lg
           bg-white dark:bg-gray-800
