@@ -11,10 +11,13 @@ import Notification, { NotificationType } from '@/components/ui/Notification';
 import { Plus, Search, Edit, Trash2, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { PlantSample, Researcher, SamplingLocation } from '@/types';
+import LocationPicker from '@/components/map/LocationPicker';
+
 
 export default function SamplesPage() {
   const [samples, setSamples] = useState<PlantSample[]>([]);
   const [locations, setLocations] = useState<SamplingLocation[]>([]);
+  const [location, setLocation] = useState<{ lng: number; lat: number } | null>(null);
   const [researchers, setResearchers] = useState<Researcher[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSample, setEditingSample] = useState<PlantSample | null>(null);
@@ -403,12 +406,25 @@ export default function SamplesPage() {
             {/* Location Section */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Location</h3>
-              <Select
-                label="Sampling Location"
-                value={formData.location_id}
-                onChange={(e) => setFormData({ ...formData, location_id: e.target.value })}
-                options={locationOptions}
-              />
+              <LocationPicker onValueChanged={setLocation}/>
+              <div className='mt-2 flex gap-2'>
+                 <Input
+                  label="Longitude"
+                  type="number"
+                  step="0.1"
+                  disabled={true}
+                  value={location?.lng}
+                  // onChange={(e) => setFormData({ ...formData, : e.target.value })}
+                />
+                 <Input
+                  label="Latitude"
+                  type="number"
+                  step="0.1"
+                  disabled={true}
+                  value={location?.lat}
+                  // onChange={(e) => setFormData({ ...formData, temperature: e.target.value })}
+                />
+              </div>
             </div>
 
             {/* Researcher Section */}
