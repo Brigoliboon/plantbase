@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabaseClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 export function useAuth() {
@@ -9,10 +9,11 @@ export function useAuth() {
 
   useEffect(() => {
     let mounted = true;
+    const supabase = createClient();
 
     const getInitialSession = async () => {
       try {
-        const { data, error } = await supabaseClient.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
         if (error) {
           console.error("getSession error:", error);
         } else if (mounted) {
@@ -28,7 +29,7 @@ export function useAuth() {
 
     getInitialSession();
 
-    const { data: authListener } = supabaseClient.auth.onAuthStateChange(
+    const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (!mounted) return;
         setUser(session?.user ?? null);
