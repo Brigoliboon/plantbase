@@ -7,6 +7,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Notification, { NotificationType } from '@/components/ui/Notification';
 import { supabaseClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 
 export default function SignInPage() {
   const router = useRouter();
@@ -31,7 +32,8 @@ export default function SignInPage() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabaseClient.auth.signInWithPassword({
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
