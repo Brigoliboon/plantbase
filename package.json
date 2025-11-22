@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.13.0",
-    "@supabase/supabase-js": "^2.83.0",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.84.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.554.0",
     "mapbox-gl": "^3.16.0",
