@@ -17,7 +17,7 @@ import LocationPicker from '@/components/map/LocationPicker';
 export default function SamplesPage() {
   const [samples, setSamples] = useState<PlantSample[]>([]);
   const [locations, setLocations] = useState<SamplingLocation[]>([]);
-  const [location, setLocation] = useState<{ lng: number; lat: number } | null>(null);
+  const [location, setLocation] = useState<{ lng: number; lat: number , desc:string} | null>(null);
   const [researchers, setResearchers] = useState<Researcher[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSample, setEditingSample] = useState<PlantSample | null>(null);
@@ -427,6 +427,13 @@ export default function SamplesPage() {
               </div>
             </div>
 
+            {/* Location Description */}
+             <Textarea
+                  label="Description"
+                  value={location?.desc}
+                  // onChange={(e) => setFormData({ ...formData, desc: e.target.value })}
+                  rows={3}
+                />
             {/* Researcher Section */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Researcher</h3>
