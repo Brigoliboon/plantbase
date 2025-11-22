@@ -15,12 +15,16 @@ export interface Researcher {
 }
 
 export interface SamplingLocation {
+  description: string | null | undefined;
+  country: string;
   location_id: string;
   name?: string | null;
-  description?: string | null;
   region?: string | null;
+  province?: string | null;
+  municipality?: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
   metadata?: Record<string, unknown> | null;
-  country?: string | null;
   coordinates: {
     latitude: number;
     longitude: number;
