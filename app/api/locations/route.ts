@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase-server';
+
+import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 
 type CoordinateValue = string | { coordinates?: [number, number] } | null;
 type RawLocation = {
@@ -55,8 +57,16 @@ const buildPoint = (latitude?: number, longitude?: number) => {
 };
 
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+ const supabase = await createClient()
+  // Check if user is authenticated
+  const {
+    data: { user },
+    error
+  } = await supabase.auth.getUser();
 
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const { searchParams } = new URL(request.url);
     const region = searchParams.get('region');
@@ -70,18 +80,21 @@ export async function GET(request: NextRequest) {
       query = query.ilike('region', `%${region}%`);
     }
 
-    const { data, error } = await query;
+    const { data, error} = await query;
 
     if (error) throw error;
 
-    return NextResponse.json(data.map(normalizeLocation), { status: 200 });
+    return NextResponse.json(data);
+    // return NextResponse.json(data.map(normalizeLocation), { status: 200 });
+    // return NextResponse.json((await supabase.auth.getSession()).data.session?.user)
   } catch (error) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    console.log(error)
+    return NextResponse.json({ error: getErrorMessage(error), mess:error }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createClient();
 
   try {
     const body = await request.json();
@@ -90,17 +103,19 @@ export async function POST(request: NextRequest) {
     const longitude = body.longitude ? parseFloat(body.longitude) : undefined;
     const coordinates = buildPoint(latitude, longitude);
 
+    // Construct metadata if needed
     const metadata = body.metadata || {};
-    if (body.country) {
-      metadata.country = body.country;
-    }
+    if (body.country) metadata.country = body.country;
 
+    // Updated payload: include municipality instead of description
     const payload = {
       name: body.name || null,
-      description: body.description || null,
       region: body.region || null,
+      province: body.province || null,
+      municipality: body.municipality || null,
+      longitude: body.longitude || null,
+      latitude: body.latitude || null,
       metadata: Object.keys(metadata).length ? metadata : null,
-      coordinates,
     };
 
     const { data, error } = await supabase
@@ -116,4 +131,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
+
 
