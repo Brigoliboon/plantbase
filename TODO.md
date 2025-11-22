@@ -11,3 +11,5 @@ last progress:
 22/11/2025 - 6:37PM
 - assign from data on long, lat and loc 
 - Finalize the Researcher picker
+- revert the old coordinate attrib from supabase prod
+    - on api endpoints, also revert the changes regarding on this matter
