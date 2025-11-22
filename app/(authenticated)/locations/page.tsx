@@ -43,7 +43,9 @@ export default function LocationsPage() {
   const fetchLocations = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/locations');
+      const response = await fetch('/api/locations', {
+        credentials: 'include'
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to load locations');
       setLocations(data);
@@ -233,6 +235,12 @@ export default function LocationsPage() {
                     Region
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Province
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Municipality
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Country
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -267,10 +275,16 @@ export default function LocationsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                      {location.description}
+                      {location.description || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                       {location.region}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      {location.province}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      {location.municipality || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                       {location.country || '-'}
