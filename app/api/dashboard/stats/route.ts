@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { createClient } from '@/lib/supabase/server';
 
 const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : 'Unexpected server error');
 
 export async function GET() {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createClient();
 
   try {
     const startOfMonth = new Date();
