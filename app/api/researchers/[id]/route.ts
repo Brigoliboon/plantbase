@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { createClient } from '@/lib/supabase/server';
 
 type RawResearcher = {
   contact?: Record<string, unknown> | null;
@@ -17,7 +18,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createClient();
 
   try {
     const { data, error } = await supabase
@@ -38,7 +39,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createClient();
 
   try {
     const body = await request.json();
@@ -69,7 +70,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createClient();
 
   try {
     const { error } = await supabase
