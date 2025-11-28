@@ -34,6 +34,8 @@ export default function LocationPicker({onValueChanged}:any) {
       .setLngLat([122, 13])
       .addTo(mapRef.current);
 
+    newMarkerRef.current = newMarker;
+
     function onDragEnd() {
       const lngLat = marker.getLngLat();
       setCoords({

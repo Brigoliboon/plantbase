@@ -1,39 +1,45 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import MainLayout from '@/app/(authenticated)/layout';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Textarea from '@/components/ui/Textarea';
-import Notification, { NotificationType } from '@/components/ui/Notification';
+import Notification from '@/components/ui/Notification';
 import { Plus, Search, Edit, Trash2, Filter } from 'lucide-react';
 import { format } from 'date-fns';
-import { PlantSample, Researcher, SamplingLocation } from '@/types';
+import { PlantSample } from '@/types';
 import LocationPicker from '@/components/map/LocationPicker';
+import { useSamples } from './hooks/useSamples';
 
 
 export default function SamplesPage() {
-  const [samples, setSamples] = useState<PlantSample[]>([]);
-  const [locations, setLocations] = useState<SamplingLocation[]>([]);
+  const {
+    samples,
+    researchers,
+    isLoading,
+    isSubmitting,
+    notification,
+    showNotification,
+    closeNotification,
+    createSample,
+    updateSample,
+    deleteSample,
+  } = useSamples();
+
   const [location, setLocation] = useState<{ lng: number; lat: number , desc:string} | null>(null);
-  const [researchers, setResearchers] = useState<Researcher[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSample, setEditingSample] = useState<PlantSample | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [notification, setNotification] = useState<{ type: NotificationType; message: string; isVisible: boolean }>({
-    type: 'success',
-    message: '',
-    isVisible: false,
-  });
 
   const [formData, setFormData] = useState({
-    scientific_name: '',
-    common_name: '',
-    notes: '',
+    samples: [{
+      scientific_name: '',
+      common_name: '',
+      notes: '',
+    }],
     location_id: '',
     researcher_id: '',
     sample_date: '',
@@ -43,44 +49,6 @@ export default function SamplesPage() {
     altitude: '',
     soil_type: '',
   });
-
-  const showNotification = useCallback((type: NotificationType, message: string) => {
-    setNotification({ type, message, isVisible: true });
-  }, []);
-
-  const fetchInitialData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [samplesRes, locationsRes, researchersRes] = await Promise.all([
-        fetch('/api/samples'),
-        fetch('/api/locations'),
-        fetch('/api/researchers'),
-      ]);
-
-      const [samplesData, locationsData, researchersData] = await Promise.all([
-        samplesRes.json(),
-        locationsRes.json(),
-        researchersRes.json(),
-      ]);
-
-      if (!samplesRes.ok) throw new Error(samplesData.error || 'Failed to load samples');
-      if (!locationsRes.ok) throw new Error(locationsData.error || 'Failed to load locations');
-      if (!researchersRes.ok) throw new Error(researchersData.error || 'Failed to load researchers');
-
-      setSamples(samplesData);
-      setLocations(locationsData);
-      setResearchers(researchersData);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load data';
-      showNotification('error', message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [showNotification]);
-
-  useEffect(() => {
-    fetchInitialData();
-  }, [fetchInitialData]);
 
   const numberOrNull = (value: string) => {
     if (value === '' || value === null || value === undefined) return null;
@@ -92,9 +60,11 @@ export default function SamplesPage() {
     if (sample) {
       setEditingSample(sample);
       setFormData({
-        scientific_name: sample.scientific_name,
-        common_name: sample.common_name || '',
-        notes: sample.notes || '',
+        samples: [{
+          scientific_name: sample.scientific_name,
+          common_name: sample.common_name || '',
+          notes: sample.notes || '',
+        }],
         location_id: sample.location_id || '',
         researcher_id: sample.researcher_id || '',
         sample_date: sample.sample_date ? sample.sample_date.slice(0, 10) : '',
@@ -104,12 +74,24 @@ export default function SamplesPage() {
         altitude: sample.environmental_condition?.altitude?.toString() || '',
         soil_type: sample.environmental_condition?.soil_type || '',
       });
+      // Set location from sample's coordinates
+      if (sample.sampling_location?.coordinates) {
+        setLocation({
+          lng: sample.sampling_location.coordinates.coordinates[0],
+          lat: sample.sampling_location.coordinates.coordinates[1],
+          desc: sample.sampling_location.description || '',
+        });
+      } else {
+        setLocation(null);
+      }
     } else {
       setEditingSample(null);
       setFormData({
-        scientific_name: '',
-        common_name: '',
-        notes: '',
+        samples: [{
+          scientific_name: '',
+          common_name: '',
+          notes: '',
+        }],
         location_id: '',
         researcher_id: '',
         sample_date: '',
@@ -119,6 +101,7 @@ export default function SamplesPage() {
         altitude: '',
         soil_type: '',
       });
+      setLocation(null);
     }
     setIsModalOpen(true);
   };
@@ -128,74 +111,51 @@ export default function SamplesPage() {
     setEditingSample(null);
   };
 
+  const addSample = () => {
+    setFormData((prev) => ({
+      ...prev,
+      samples: [...prev.samples, { scientific_name: '', common_name: '', notes: '' }],
+    }));
+  };
+
+  const removeSample = (index: number) => {
+    if (formData.samples.length > 1) {
+      setFormData((prev) => ({
+        ...prev,
+        samples: prev.samples.filter((_, i) => i !== index),
+      }));
+    }
+  };
+
+  const updateFormSample = (index: number, field: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      samples: prev.samples.map((sample, i) =>
+        i === index ? { ...sample, [field]: value } : sample
+      ),
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.scientific_name) {
-      showNotification('error', 'Scientific name is required.');
+    const invalidSamples = formData.samples.filter((sample) => !sample.scientific_name);
+    if (invalidSamples.length > 0) {
+      showNotification('error', 'Scientific name is required for all samples.');
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const payload = {
-        scientific_name: formData.scientific_name,
-        common_name: formData.common_name || null,
-        notes: formData.notes || null,
-        location_id: formData.location_id || null,
-        researcher_id: formData.researcher_id || null,
-        sample_date: formData.sample_date || null,
-        environmental: {
-          temperature: numberOrNull(formData.temperature),
-          humidity: numberOrNull(formData.humidity),
-          soil_ph: numberOrNull(formData.soil_ph),
-          altitude: numberOrNull(formData.altitude),
-          soil_type: formData.soil_type || null,
-        },
-      };
+    const success = editingSample
+      ? await updateSample(editingSample.sample_id, formData, location)
+      : await createSample(formData, location);
 
-      const endpoint = editingSample ? `/api/samples/${editingSample.sample_id}` : '/api/samples';
-      const method = editingSample ? 'PUT' : 'POST';
-
-      const response = await fetch(endpoint, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Unable to save sample');
-
-      if (editingSample) {
-        setSamples((prev) => prev.map((sample) => (sample.sample_id === data.sample_id ? data : sample)));
-        showNotification('success', 'Sample updated successfully.');
-      } else {
-        setSamples((prev) => [data, ...prev]);
-        showNotification('success', 'Sample added successfully.');
-      }
-
+    if (success) {
       handleCloseModal();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to save sample';
-      showNotification('error', message);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this sample?')) return;
-
-    try {
-      const response = await fetch(`/api/samples/${id}`, { method: 'DELETE' });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Unable to delete sample');
-
-      setSamples((prev) => prev.filter((sample) => sample.sample_id !== id));
-      showNotification('success', 'Sample deleted successfully.');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to delete sample';
-      showNotification('error', message);
-    }
+    await deleteSample(id);
   };
 
   const filteredSamples = useMemo(() => {
@@ -217,16 +177,6 @@ export default function SamplesPage() {
     });
   }, [samples, searchTerm]);
 
-  const locationOptions = useMemo(
-    () => [
-      { value: '', label: 'Select a location' },
-      ...locations.map((location) => ({
-        value: location.location_id,
-        label: location.name || location.description || 'Untitled Location',
-      })),
-    ],
-    [locations]
-  );
 
   const researcherOptions = useMemo(
     () => [
@@ -245,7 +195,7 @@ export default function SamplesPage() {
         type={notification.type}
         message={notification.message}
         isVisible={notification.isVisible}
-        onClose={() => setNotification({ ...notification, isVisible: false })}
+        onClose={closeNotification}
       />
 
       <div className="space-y-6">
@@ -375,46 +325,77 @@ export default function SamplesPage() {
         <Modal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
-          title={editingSample ? 'Edit Sample' : 'Add New Sample'}
+          title={editingSample ? 'Edit Sample' : 'Add New Samples'}
           size="lg"
         >
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Plant Info Section */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Plant Information</h3>
-              <div className="space-y-4">
-                <Input
-                  label="Scientific Name *"
-                  value={formData.scientific_name}
-                  onChange={(e) => setFormData({ ...formData, scientific_name: e.target.value })}
-                  required
-                />
-                <Input
-                  label="Common Name"
-                  value={formData.common_name}
-                  onChange={(e) => setFormData({ ...formData, common_name: e.target.value })}
-                />
-                <Textarea
-                  label="Notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  rows={3}
-                />
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Plant Information</h3>
+                {!editingSample && (
+                  <Button type="button" variant="outline" onClick={addSample}>
+                    <Plus size={16} className="mr-2" />
+                    Add Sample
+                  </Button>
+                )}
+              </div>
+              <div className="overflow-x-auto">
+                <div className="flex space-x-4 pb-4">
+                  {formData.samples.map((sample, index) => (
+                    <div key={index} className="flex-shrink-0 w-80 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-md font-medium text-gray-900 dark:text-white">Sample {index + 1}</h4>
+                        {!editingSample && formData.samples.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeSample(index)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="space-y-4">
+                        <Input
+                          label="Scientific Name *"
+                          value={sample.scientific_name}
+                          onChange={(e) => updateFormSample(index, 'scientific_name', e.target.value)}
+                          required
+                        />
+                        <Input
+                          label="Common Name"
+                          value={sample.common_name}
+                          onChange={(e) => updateFormSample(index, 'common_name', e.target.value)}
+                        />
+                        <Textarea
+                          label="Notes"
+                          value={sample.notes}
+                          onChange={(e) => updateFormSample(index, 'notes', e.target.value)}
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Location Section */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Location</h3>
-              <LocationPicker onValueChanged={setLocation}/>
+              <LocationPicker
+                onValueChanged={setLocation}
+              />
               <div className='mt-2 flex gap-2'>
                  <Input
                   label="Longitude"
                   type="number"
                   step="0.1"
                   disabled={true}
-                  value={location?.lng}
-                  // onChange={(e) => setFormData({ ...formData, : e.target.value })}
+                  value={location?.lng || ''}
                 />
                  <Input
                   label="Latitude"
@@ -422,18 +403,9 @@ export default function SamplesPage() {
                   step="0.1"
                   disabled={true}
                   value={location?.lat}
-                  // onChange={(e) => setFormData({ ...formData, temperature: e.target.value })}
                 />
               </div>
             </div>
-
-            {/* Location Description */}
-             <Textarea
-                  label="Description"
-                  value={location?.desc}
-                  // onChange={(e) => setFormData({ ...formData, desc: e.target.value })}
-                  rows={3}
-                />
             {/* Researcher Section */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Researcher</h3>
@@ -505,7 +477,7 @@ export default function SamplesPage() {
                 Cancel
               </Button>
               <Button type="submit" variant="primary" disabled={isSubmitting}>
-                {editingSample ? 'Update Sample' : 'Add Sample'}
+                {editingSample ? 'Update Sample' : 'Add Samples'}
               </Button>
             </div>
           </form>
