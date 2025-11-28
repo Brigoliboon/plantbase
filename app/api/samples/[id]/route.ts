@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { EnvironmentalCondition, PlantSample, Researcher, SamplingLocation } from '@/types';
+import { createClient } from '@/lib/supabase/server';
 
 const SAMPLE_SELECT = `
   sample_id,
@@ -152,13 +153,15 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = createSupabaseServerClient();
+  const param = await params;
+  const id = param.id;
+  const supabase = await createClient();
 
   try {
-    const { error } = await supabase.from('plant_sample').delete().eq('sample_id', params.id);
-
+    const { error } = await supabase.from('plant_sample').delete().eq('sample_id', id);
+    console.log(error)
     if (error) throw error;
 
     return NextResponse.json({ message: 'Sample deleted successfully' }, { status: 200 });
