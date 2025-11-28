@@ -80,12 +80,15 @@ const fetchSampleById = async (supabase: ReturnType<typeof createSupabaseServerC
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+
+  const param = await params;
+  const id = param.id;
   const supabase = await createClient();
 
   try {
-    const sample = await fetchSampleById(supabase, params.id);
+    const sample = await fetchSampleById(supabase, id);
     return NextResponse.json(sample, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
@@ -94,8 +97,11 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+
+  const param = await params;
+  const id = param.id;
   const supabase = await createClient();
 
   try {
@@ -115,10 +121,10 @@ export async function PUT(
       payload.sample_date = body.sample_date;
     }
 
-    const { error: sampleError } = await supabase.from('plant_sample').update(payload).eq('sample_id', params.id);
+    const { error: sampleError } = await supabase.from('plant_sample').update(payload).eq('sample_id', id);
     if (sampleError) throw sampleError;
 
-    await supabase.from('environmental_condition').delete().eq('sample_id', params.id);
+    await supabase.from('environmental_condition').delete().eq('sample_id', id);
 
     const environmentalPayload = {
       temperature: body.environmental?.temperature ?? null,
@@ -137,14 +143,14 @@ export async function PUT(
       const { error: envError } = await supabase.from('environmental_condition').insert([
         {
           ...environmentalPayload,
-          sample_id: params.id,
+          sample_id: id,
         },
       ]);
 
       if (envError) throw envError;
     }
 
-    const updatedSample = await fetchSampleById(supabase, params.id);
+    const updatedSample = await fetchSampleById(supabase, id);
     return NextResponse.json(updatedSample, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
