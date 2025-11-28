@@ -16,15 +16,18 @@ const getErrorMessage = (error: unknown) => (error instanceof Error ? error.mess
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+
+  const param = await params;
+  const id = param.id;
   const supabase = await createClient();
 
   try {
     const { data, error } = await supabase
       .from('researcher')
       .select('*')
-      .eq('researcher_id', params.id)
+      .eq('researcher_id', id)
       .single();
 
     if (error) throw error;
@@ -37,8 +40,11 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+
+  const param = await params;
+  const id = param.id;
   const supabase = await createClient();
 
   try {
@@ -54,7 +60,7 @@ export async function PUT(
     const { data, error } = await supabase
       .from('researcher')
       .update(payload)
-      .eq('researcher_id', params.id)
+      .eq('researcher_id', id)
       .select()
       .single();
 
@@ -68,15 +74,18 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+
+  const param = await params;
+  const id = param.id;
   const supabase = await createClient();
 
   try {
     const { error } = await supabase
       .from('researcher')
       .delete()
-      .eq('researcher_id', params.id);
+      .eq('researcher_id', id);
 
     if (error) throw error;
 
