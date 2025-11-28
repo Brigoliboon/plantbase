@@ -82,7 +82,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createClient();
 
   try {
     const sample = await fetchSampleById(supabase, params.id);
@@ -96,7 +96,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createClient();
 
   try {
     const body = await request.json();
