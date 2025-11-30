@@ -66,8 +66,8 @@ export default function LocationsPage() {
       setEditingLocation(location);
       setFormData({
         name: location.name || '',
-        latitude: location.coordinates?.latitude?.toString() || '',
-        longitude: location.coordinates?.longitude?.toString() || '',
+        latitude: location.coordinates?.coordinates ? location.coordinates.coordinates[1].toString() : '',
+        longitude: location.coordinates?.coordinates ? location.coordinates.coordinates[0].toString() : '',
         description: location.description || '',
         region: location.region || '',
         country: location.country || '',
@@ -267,11 +267,7 @@ export default function LocationsPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                       <div className="flex items-center gap-2">
                         <MapPin size={16} className="text-green-600" />
-                        <span>
-                          {location.coordinates
-                            ? `${location.coordinates.latitude.toFixed(4)}, ${location.coordinates.longitude.toFixed(4)}`
-                            : 'N/A'}
-                        </span>
+                        <span>{location.coordinates?.coordinates[0]}, {location.coordinates?.coordinates[1]}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
