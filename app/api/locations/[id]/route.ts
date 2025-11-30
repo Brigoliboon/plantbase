@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { createClient } from '@/lib/supabase/server';
 
-type CoordinateValue = string | { coordinates?: [number, number] } | null;
+type CoordinateValue = string | { type?: string; coordinates?: [number, number] } | null;
 type RawLocation = {
-  coordinates?: CoordinateValue;
+  coordinates: CoordinateValue | undefined | null;
   metadata?: Record<string, unknown> | null;
   [key: string]: unknown;
 };
 
+// Changed parseCoordinates to return GeoJSON Point format instead of latitude/longitude object
 const parseCoordinates = (coordinates: CoordinateValue) => {
   if (!coordinates) return null;
 
@@ -16,18 +18,25 @@ const parseCoordinates = (coordinates: CoordinateValue) => {
     if (match) {
       const [, lng, lat] = match;
       return {
-        latitude: parseFloat(lat),
-        longitude: parseFloat(lng),
+        type: "Point",
+        coordinates: [parseFloat(lng), parseFloat(lat)],
       };
     }
   }
 
-  if (typeof coordinates === 'object' && Array.isArray(coordinates.coordinates)) {
+  if (
+    typeof coordinates === 'object' &&
+    coordinates.type === 'Point' &&
+    Array.isArray(coordinates.coordinates) &&
+    coordinates.coordinates.length === 2
+  ) {
     const [lng, lat] = coordinates.coordinates;
-    return {
-      latitude: lat,
-      longitude: lng,
-    };
+    if (typeof lat === 'number' && typeof lng === 'number') {
+      return {
+        type: "Point",
+        coordinates: [lng, lat],
+      };
+    }
   }
 
   return null;
@@ -47,7 +56,7 @@ const buildPoint = (latitude?: number, longitude?: number) => {
 
 const normalizeLocation = (record: RawLocation) => ({
   ...record,
-  coordinates: parseCoordinates(record.coordinates),
+  coordinates: parseCoordinates(record.coordinates ?? null),
   country: record.metadata?.country ?? null,
   metadata: record.metadata || null,
 });
@@ -55,23 +64,26 @@ const normalizeLocation = (record: RawLocation) => ({
 const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : 'Unexpected server error');
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  request: Request,
+  context: { params: Promise<{ id: string }> } // notice Promise
 ) {
-  const supabase = createSupabaseServerClient();
+  const params = await context.params; // unwrap the Promise
+  const { id } = params;
+
+  const supabase = await createClient();
 
   try {
     const { data, error } = await supabase
       .from('sampling_location')
       .select('*')
-      .eq('location_id', params.id)
-      .single();
+      .eq('location_id', id)
+      .maybeSingle();
 
     if (error) throw error;
 
     return NextResponse.json(normalizeLocation(data), { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error), message: error, id: Number(id) }, { status: 500 });
   }
 }
 
@@ -135,4 +147,3 @@ export async function DELETE(
     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
-
