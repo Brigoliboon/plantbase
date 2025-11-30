@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { createClient } from '@/lib/supabase/server';
 
 type RawResearcher = {
   contact?: Record<string, unknown> | null;
@@ -14,7 +15,7 @@ const normalizeResearcher = (record: RawResearcher) => ({
 const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : 'Unexpected server error');
 
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createClient();
 
   try {
     const { searchParams } = new URL(request.url);
