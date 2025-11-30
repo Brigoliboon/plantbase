@@ -121,17 +121,21 @@ export function useSamples() {
   const updateSample = useCallback(async (sampleId: string, formData: SampleFormData, location: LocationData | null) => {
     setIsSubmitting(true);
     try {
+      const sampleData = formData.samples[0]; // Since editing only handles one sample
       const payload = {
-        samples: formData.samples,
-        location_id: formData.location_id || "",
-        coordinates: location ? { lng: location.lng, lat: location.lat, desc: location.desc } : null,
+        scientific_name: sampleData.scientific_name,
+        common_name: sampleData.common_name || null,
+        notes: sampleData.notes || null,
+        location_id: formData.location_id || null,
         researcher_id: formData.researcher_id,
         sample_date: formData.sample_date,
-        temperature: formData.temperature,
-        humidity: formData.humidity,
-        soil_ph: formData.soil_ph,
-        altitude: formData.altitude,
-        soil_type: formData.soil_type,
+        environmental: {
+          temperature: formData.temperature ? parseFloat(formData.temperature) : null,
+          humidity: formData.humidity ? parseFloat(formData.humidity) : null,
+          soil_ph: formData.soil_ph ? parseFloat(formData.soil_ph) : null,
+          altitude: formData.altitude ? parseFloat(formData.altitude) : null,
+          soil_type: formData.soil_type || null,
+        },
       };
 
       const response = await fetch(`/api/samples/${sampleId}`, {
