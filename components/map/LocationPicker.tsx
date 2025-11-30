@@ -34,8 +34,6 @@ export default function LocationPicker({onValueChanged}:any) {
       .setLngLat([122, 13])
       .addTo(mapRef.current);
 
-    newMarkerRef.current = newMarker;
-
     function onDragEnd() {
       const lngLat = marker.getLngLat();
       setCoords({
@@ -58,10 +56,14 @@ export default function LocationPicker({onValueChanged}:any) {
 
   return (
     <>
+      <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+        <p>• Click on the map or drag the red marker to create a new location</p>
+      </div>
       <div
         ref={mapContainerRef}
         id="map"
         style={{ height: "400px", width: "100%" }}
+        className="border border-gray-300 dark:border-gray-600 rounded-lg"
       />
     </>
   );
