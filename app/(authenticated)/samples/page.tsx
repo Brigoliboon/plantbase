@@ -41,6 +41,7 @@ export default function SamplesPage() {
       notes: '',
     }],
     location_id: '',
+    coordinates:location,
     researcher_id: '',
     sample_date: '',
     temperature: '',
@@ -136,6 +137,10 @@ export default function SamplesPage() {
     }));
   };
 
+  const updateLocationDesc = (value: string) => {
+    setLocation(prev => prev ? { ...prev, desc: value } : null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const invalidSamples = formData.samples.filter((sample) => !sample.scientific_name);
@@ -144,9 +149,52 @@ export default function SamplesPage() {
       return;
     }
 
+    let updatedFormData = { ...formData };
+
+    // Create location if location is provided and location_id is empty
+    if (location && !formData.location_id) {
+      // Validate coordinates
+      if (location.lat < -90 || location.lat > 90) {
+        showNotification('error', 'Invalid latitude. Must be between -90 and 90 degrees.');
+        return;
+      }
+      if (location.lng < -180 || location.lng > 180) {
+        showNotification('error', 'Invalid longitude. Must be between -180 and 180 degrees.');
+        return;
+      }
+   
+      try {
+        const locationResponse = await fetch('/api/locations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            lat: location.lat,
+            lng: location.lng,
+            desc: location.desc || null,
+          }),
+        });
+
+        if (!locationResponse.ok) {
+          const errorData = await locationResponse.json();
+          throw new Error(errorData.error || 'Failed to create location');
+        }
+
+        console.log(locationResponse)
+        const newLocation = await locationResponse.json();
+        updatedFormData.location_id = newLocation.location_id;
+      } catch (error) {
+        console.error('Error creating location:', error);
+        showNotification('error', error instanceof Error ? error.message : 'Failed to create location. Please try again.');
+        return;
+      }
+    }
+
+    console.log(updatedFormData);
     const success = editingSample
-      ? await updateSample(editingSample.sample_id, formData, location)
-      : await createSample(formData, location);
+      ? await updateSample(editingSample.sample_id, updatedFormData, location)
+      : await createSample(updatedFormData, location);
 
     if (success) {
       handleCloseModal();
@@ -169,6 +217,7 @@ export default function SamplesPage() {
         sample.sampling_location?.description ||
         sample.sampling_location?.region ||
         '';
+        console.log(locationName)
       return (
         scientific.includes(query) ||
         common.includes(query) ||
@@ -188,7 +237,7 @@ export default function SamplesPage() {
     ],
     [researchers]
   );
-
+  console.log(filteredSamples)
   return (
     <>
       <Notification
@@ -289,7 +338,8 @@ export default function SamplesPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                      {sample.sampling_location?.name || sample.sampling_location?.description || '—'}
+                      {sample.sampling_location?.coordinates?.coordinates
+                        ? sample.sampling_location?.municipality || sample.sampling_location?.region : '—'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                       {sample.sample_date ? format(new Date(sample.sample_date), 'MMM dd, yyyy') : '—'}
@@ -370,12 +420,12 @@ export default function SamplesPage() {
                           value={sample.common_name}
                           onChange={(e) => updateFormSample(index, 'common_name', e.target.value)}
                         />
-                        <Textarea
-                          label="Notes"
-                          value={sample.notes}
-                          onChange={(e) => updateFormSample(index, 'notes', e.target.value)}
-                          rows={3}
-                        />
+                <Textarea
+                  label="Description"
+                  value={sample.notes}
+                  onChange={(e) => updateFormSample(index, 'notes', e.target.value)}
+                  rows={3}
+                />
                       </div>
                     </div>
                   ))}
@@ -389,7 +439,7 @@ export default function SamplesPage() {
               <LocationPicker
                 onValueChanged={setLocation}
               />
-              <div className='mt-2 flex gap-2'>
+              <div className='flex flex-col mt-2 flex gap-2'>
                  <Input
                   label="Longitude"
                   type="number"
@@ -403,6 +453,12 @@ export default function SamplesPage() {
                   step="0.1"
                   disabled={true}
                   value={location?.lat}
+                />
+                <Textarea
+                  label="Notes"
+                  value={location?.desc || ''}
+                  onChange={(e) => updateLocationDesc(e.target.value)}
+                  rows={3}
                 />
               </div>
             </div>
@@ -449,13 +505,13 @@ export default function SamplesPage() {
                 <Input
                   label="Soil pH"
                   type="number"
-                  step="0.1"
-                  min="0"
+                  step={0.1}
+                  min={0}
                   max="14"
                   value={formData.soil_ph}
                   onChange={(e) => setFormData({ ...formData, soil_ph: e.target.value })}
                 />
-                <Input
+                <Input 
                   label="Altitude (m)"
                   type="number"
                   value={formData.altitude}
