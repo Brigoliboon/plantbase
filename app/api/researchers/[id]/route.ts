@@ -27,13 +27,14 @@ export async function GET(
     const { data, error } = await supabase
       .from('researcher')
       .select('*')
-      .eq('researcher_id', id)
+      .eq('auth_id', id)
       .single();
 
     if (error) throw error;
 
     return NextResponse.json(normalizeResearcher(data), { status: 200 });
   } catch (error) {
+    console.log(error)
     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
@@ -79,19 +80,31 @@ export async function DELETE(
 
   const param = await params;
   const id = param.id;
-  const supabase = await createClient();
+  const supabase = createSupabaseServerClient();
 
   try {
-    const { error } = await supabase
-      .from('researcher')
-      .delete()
-      .eq('researcher_id', id);
+    // Check if user is authenticated
+    const {
+      data: { user },
+      error: authError
+    } = await supabase.auth.getUser();
 
-    if (error) throw error;
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    return NextResponse.json({ message: 'Researcher deleted successfully' }, { status: 200 });
+    // Security check: user can only delete their own account
+    if (user.id !== id) {
+      return NextResponse.json({ error: "You can only delete your own account" }, { status: 403 });
+    }
+
+    // First delete the user from auth.users (this will cascade to researcher table)
+    const { error: deleteError } = await supabase.auth.admin.deleteUser(id);
+
+    if (deleteError) throw deleteError;
+
+    return NextResponse.json({ message: 'Researcher and user account deleted successfully' }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
-
