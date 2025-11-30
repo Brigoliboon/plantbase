@@ -51,11 +51,6 @@ export default function SamplesPage() {
     soil_type: '',
   });
 
-  const numberOrNull = (value: string) => {
-    if (value === '' || value === null || value === undefined) return null;
-    const parsed = parseFloat(value);
-    return Number.isNaN(parsed) ? null : parsed;
-  };
 
   const handleOpenModal = (sample?: PlantSample) => {
     if (sample) {
@@ -67,6 +62,11 @@ export default function SamplesPage() {
           notes: sample.notes || '',
         }],
         location_id: sample.location_id || '',
+        coordinates: sample.sampling_location?.coordinates ? {
+          lng: sample.sampling_location.coordinates.coordinates[0],
+          lat: sample.sampling_location.coordinates.coordinates[1],
+          desc: sample.sampling_location.description || '',
+        } : null,
         researcher_id: sample.researcher_id || '',
         sample_date: sample.sample_date ? sample.sample_date.slice(0, 10) : '',
         temperature: sample.environmental_condition?.temperature?.toString() || '',
@@ -94,6 +94,7 @@ export default function SamplesPage() {
           notes: '',
         }],
         location_id: '',
+        coordinates: null,
         researcher_id: '',
         sample_date: '',
         temperature: '',
