@@ -14,19 +14,19 @@ const SAMPLE_SELECT = `
   attributes,
   created_at,
   updated_at,
-  sampling_location:sampling_location(*),
-  researcher:researcher(*),
-  environmental_condition:environmental_condition(*)
+  sampling_location!location_id(*),
+  researcher!researcher_id(*),
+  environmental_condition!sample_id(*)
 `;
 
-type CoordinateValue = string | { coordinates?: [number, number] } | null;
+type CoordinateValue = string | { type?: string; coordinates?: [number, number] } | null;
 type RawSamplingLocation = Omit<SamplingLocation, 'coordinates'> & { coordinates?: CoordinateValue };
 type RawResearcher = Omit<Researcher, 'contact'> & { contact?: Record<string, unknown> | null };
 type RawEnvironmentalCondition = EnvironmentalCondition;
 type RawSample = Omit<PlantSample, 'sampling_location' | 'researcher' | 'environmental_condition'> & {
-  sampling_location?: RawSamplingLocation | null;
-  researcher?: RawResearcher | null;
-  environmental_condition?: RawEnvironmentalCondition[] | RawEnvironmentalCondition | null;
+  sampling_location?: SamplingLocation[] | null;
+  researcher?: RawResearcher[] | null;
+  environmental_condition?: RawEnvironmentalCondition[] | null;
 };
 
 const parseCoordinates = (coordinates: CoordinateValue) => {
@@ -37,18 +37,25 @@ const parseCoordinates = (coordinates: CoordinateValue) => {
     if (match) {
       const [, lng, lat] = match;
       return {
-        latitude: parseFloat(lat),
-        longitude: parseFloat(lng),
+        type: "Point",
+        coordinates: [parseFloat(lng), parseFloat(lat)],
       };
     }
   }
 
-  if (typeof coordinates === 'object' && Array.isArray(coordinates.coordinates)) {
+  if (
+    typeof coordinates === 'object' &&
+    coordinates.type === 'Point' &&
+    Array.isArray(coordinates.coordinates) &&
+    coordinates.coordinates.length === 2
+  ) {
     const [lng, lat] = coordinates.coordinates;
-    return {
-      latitude: lat,
-      longitude: lng,
-    };
+    if (typeof lat === 'number' && typeof lng === 'number') {
+      return {
+        type: "Point",
+        coordinates: [lng, lat],
+      };
+    }
   }
 
   return null;
@@ -56,16 +63,9 @@ const parseCoordinates = (coordinates: CoordinateValue) => {
 
 const normalizeSample = (record: RawSample): PlantSample => ({
   ...record,
-  sampling_location: record.sampling_location
-    ? {
-        ...record.sampling_location,
-        coordinates: parseCoordinates(record.sampling_location.coordinates),
-      }
-    : null,
-  researcher: record.researcher ? { ...record.researcher, contact: record.researcher.contact || {} } : null,
-  environmental_condition: Array.isArray(record.environmental_condition)
-    ? record.environmental_condition[0]
-    : record.environmental_condition,
+  sampling_location: Array.isArray(record.sampling_location) ? record.sampling_location[0] || null : record.sampling_location || null,
+  researcher: Array.isArray(record.researcher) ? (record.researcher[0] ? { ...record.researcher[0], contact: record.researcher[0].contact || {} } : null) : (record.researcher ? { ...record.researcher, contact: record.researcher.contact || {} } : null),
+  environmental_condition: Array.isArray(record.environmental_condition) ? record.environmental_condition[0] || null : record.environmental_condition || null,
 });
 
 const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : 'Unexpected server error');
@@ -99,15 +99,14 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-
-  const param = await params;
-  const id = param.id;
+  const { id } = await params;
   const supabase = await createClient();
 
   try {
     const body = await request.json();
 
-    const payload: Record<string, unknown> = {
+    // Build main sample payload
+    const payload = {
       scientific_name: body.scientific_name,
       common_name: body.common_name ?? null,
       notes: body.notes ?? null,
@@ -115,17 +114,24 @@ export async function PUT(
       researcher_id: body.researcher_id ?? null,
       attributes: body.attributes ?? null,
       updated_at: new Date().toISOString(),
+      ...(body.sample_date && { sample_date: body.sample_date }),
     };
 
-    if (body.sample_date) {
-      payload.sample_date = body.sample_date;
-    }
+    // Update main sample
+    const { error: sampleError } = await supabase
+      .from("plant_sample")
+      .update(payload)
+      .eq("sample_id", id);
 
-    const { error: sampleError } = await supabase.from('plant_sample').update(payload).eq('sample_id', id);
     if (sampleError) throw sampleError;
 
-    await supabase.from('environmental_condition').delete().eq('sample_id', id);
+    // Delete environmental conditions (clean slate)
+    await supabase
+      .from("environmental_condition")
+      .delete()
+      .eq("sample_id", id);
 
+    // Build environmental payload
     const environmentalPayload = {
       temperature: body.environmental?.temperature ?? null,
       humidity: body.environmental?.humidity ?? null,
@@ -136,26 +142,30 @@ export async function PUT(
     };
 
     const hasEnv = Object.values(environmentalPayload).some(
-      (value) => value !== null && value !== undefined && value !== ''
+      (v) => v !== null && v !== undefined && v !== ""
     );
 
+    // Insert new environmental row (only if needed)
     if (hasEnv) {
-      const { error: envError } = await supabase.from('environmental_condition').insert([
-        {
-          ...environmentalPayload,
-          sample_id: id,
-        },
-      ]);
+      const { error: envError } = await supabase
+        .from("environmental_condition")
+        .insert([{ ...environmentalPayload, sample_id: id }]);
 
       if (envError) throw envError;
     }
 
+    // Return updated record
     const updatedSample = await fetchSampleById(supabase, id);
+
     return NextResponse.json(updatedSample, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
+    return NextResponse.json(
+      { error: getErrorMessage(error) },
+      { status: 500 }
+    );
   }
 }
+
 
 export async function DELETE(
   request: NextRequest,
