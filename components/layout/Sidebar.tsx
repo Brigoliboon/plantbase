@@ -19,6 +19,7 @@ const menuItems = [
   { href: '/locations', label: 'Locations', icon: MapPin },
   { href: '/researchers', label: 'Researchers', icon: Users },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/profile', label: 'Profile', icon: Users },
 ];
 
 export default function Sidebar() {
