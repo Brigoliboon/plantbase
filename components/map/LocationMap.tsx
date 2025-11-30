@@ -35,10 +35,20 @@ export default function LocationMap({ locations }: LocationMapProps) {
 
     // Add markers for each location
     locations.forEach((location) => {
-      if (!location.coordinates) return;
+      if (
+        !location.coordinates ||
+        !Array.isArray(location.coordinates.coordinates) ||
+        location.coordinates.coordinates.length !== 2 ||
+        !isFinite(location.coordinates.coordinates[0]) ||
+        !isFinite(location.coordinates.coordinates[1])
+      )
+        return;
+
+      const longitude = location.coordinates.coordinates[0];
+      const latitude = location.coordinates.coordinates[1];
 
       const marker = new mapboxgl.Marker({ color: '#10b981' })
-        .setLngLat([location.coordinates.longitude, location.coordinates.latitude])
+        .setLngLat([longitude, latitude])
         .setPopup(
           new mapboxgl.Popup().setHTML(
             `<div class="p-2">
@@ -53,12 +63,21 @@ export default function LocationMap({ locations }: LocationMapProps) {
     });
 
     // Fit map to show all markers
-    const withCoordinates = locations.filter((location) => location.coordinates);
+    const withCoordinates = locations.filter(
+      (location) =>
+        location.coordinates &&
+        Array.isArray(location.coordinates.coordinates) &&
+        location.coordinates.coordinates.length === 2 &&
+        isFinite(location.coordinates.coordinates[0]) &&
+        isFinite(location.coordinates.coordinates[1])
+    );
 
     if (withCoordinates.length > 0 && map.current) {
       const bounds = new mapboxgl.LngLatBounds();
       withCoordinates.forEach((location) => {
-        bounds.extend([location.coordinates!.longitude, location.coordinates!.latitude]);
+        const longitude = location.coordinates!.coordinates[0];
+        const latitude = location.coordinates!.coordinates[1];
+        bounds.extend([longitude, latitude]);
       });
       map.current.fitBounds(bounds, { padding: 50 });
     }
