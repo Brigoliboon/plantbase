@@ -27,6 +27,7 @@ export default function Input({ label, error, disabled=false, className = '', ..
           ${className}
         `}
         {...props}
+        value={props.value ?? ''}
       />
       {error && (
         <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>
