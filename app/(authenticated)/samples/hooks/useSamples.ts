@@ -2,6 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { PlantSample, Researcher, SamplingLocation } from '@/types';
 import { NotificationType } from '@/components/ui/Notification';
 
+interface LocationData {
+  lng: number;
+  lat: number;
+  desc: string;
+}
+
 interface SampleFormData {
   samples: Array<{
     scientific_name: string;
@@ -9,6 +15,7 @@ interface SampleFormData {
     notes: string;
   }>;
   location_id: string;
+  coordinates: LocationData | null;
   researcher_id: string;
   sample_date: string;
   temperature: string;
@@ -16,12 +23,6 @@ interface SampleFormData {
   soil_ph: string;
   altitude: string;
   soil_type: string;
-}
-
-interface LocationData {
-  lng: number;
-  lat: number;
-  desc: string;
 }
 
 interface NotificationState {
