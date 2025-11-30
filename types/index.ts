@@ -1,5 +1,10 @@
 // Database types matching Supabase schema
 
+export type GeoJSONPoint = {
+  type: "Point";
+  coordinates: [number, number]; // [longitude, latitude]
+};
+
 export interface Researcher {
   researcher_id: string;
   auth_id?: string | null;
@@ -22,13 +27,11 @@ export interface SamplingLocation {
   region?: string | null;
   province?: string | null;
   municipality?: string | null;
-  latitude?: string | null;
-  longitude?: string | null;
+  // Removed deprecated separate latitude/longitude strings
+  // latitude?: string | null;
+  // longitude?: string | null;
   metadata?: Record<string, unknown> | null;
-  coordinates: {
-    latitude: number;
-    longitude: number;
-  } | null;
+  coordinates: GeoJSONPoint | null;
   created_at: string;
   updated_at: string;
 }
