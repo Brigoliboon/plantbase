@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(data.map(normalizeResearcher), { status: 200 });
   } catch (error) {
+    console.log(error)
     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

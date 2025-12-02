@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import MainLayout from '@/app/(authenticated)/layout';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
@@ -13,6 +12,7 @@ import { SamplingLocation } from '@/types';
 
 // Dynamically import Mapbox to avoid SSR issues
 const Map = dynamic(() => import('@/components/map/LocationMap'), { ssr: false });
+const LocationPicker = dynamic(() => import('@/components/map/LocationPicker'), { ssr: false });
 
 export default function LocationsPage() {
   const [locations, setLocations] = useState<SamplingLocation[]>([]);
@@ -29,11 +29,9 @@ export default function LocationsPage() {
 
   const [formData, setFormData] = useState({
     name: '',
-    latitude: '',
-    longitude: '',
+    lng: '',
+    lat: '',
     description: '',
-    region: '',
-    country: '',
   });
 
   const showNotification = useCallback((type: NotificationType, message: string) => {
@@ -66,21 +64,17 @@ export default function LocationsPage() {
       setEditingLocation(location);
       setFormData({
         name: location.name || '',
-        latitude: location.coordinates?.coordinates ? location.coordinates.coordinates[1].toString() : '',
-        longitude: location.coordinates?.coordinates ? location.coordinates.coordinates[0].toString() : '',
+        lng: location.coordinates?.coordinates ? location.coordinates.coordinates[0].toString() : '',
+        lat: location.coordinates?.coordinates ? location.coordinates.coordinates[1].toString() : '',
         description: location.description || '',
-        region: location.region || '',
-        country: location.country || '',
       });
     } else {
       setEditingLocation(null);
       setFormData({
         name: '',
-        latitude: '',
-        longitude: '',
+        lng: '',
+        lat: '',
         description: '',
-        region: '',
-        country: '',
       });
     }
     setIsModalOpen(true);
@@ -91,10 +85,18 @@ export default function LocationsPage() {
     setEditingLocation(null);
   };
 
+  const handleLocationChange = useCallback((coords: { lng: number; lat: number }) => {
+    setFormData(prev => ({
+      ...prev,
+      lng: coords.lng.toString(),
+      lat: coords.lat.toString(),
+    }));
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.latitude || !formData.longitude) {
-      showNotification('error', 'Latitude and longitude are required.');
+    if (!formData.lng || !formData.lat) {
+      showNotification('error', 'Coordinates are required.');
       return;
     }
 
@@ -102,11 +104,9 @@ export default function LocationsPage() {
     try {
       const payload = {
         name: formData.name || null,
-        latitude: formData.latitude,
-        longitude: formData.longitude,
+        lng: formData.lng,
+        lat: formData.lat,
         description: formData.description || null,
-        region: formData.region || null,
-        country: formData.country || null,
       };
 
       const endpoint = editingLocation ? `/api/locations/${editingLocation.location_id}` : '/api/locations';
@@ -161,9 +161,8 @@ export default function LocationsPage() {
     const query = searchTerm.toLowerCase();
     return locations.filter((location) => {
       const description = location.description?.toLowerCase() || '';
-      const region = location.region?.toLowerCase() || '';
       const country = location.country?.toLowerCase() || '';
-      return description.includes(query) || region.includes(query) || country.includes(query);
+      return description.includes(query) || country.includes(query);
     });
   }, [locations, searchTerm]);
 
@@ -186,8 +185,10 @@ export default function LocationsPage() {
             </p>
           </div>
           <Button onClick={() => handleOpenModal()}>
-            <Plus size={20} className="mr-2" />
-            Add Location
+            <div className='flex flwx-col'>
+              <Plus size={20} className="mr-2" />
+              Add Location
+            </div> 
           </Button>
         </div>
 
@@ -209,7 +210,7 @@ export default function LocationsPage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <Input
                   type="text"
-                  placeholder="Search by description, region, country..."
+                  placeholder="Search by description, country..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -318,43 +319,19 @@ export default function LocationsPage() {
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Name"
+              label="Description"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Latitude *"
-                type="number"
-                step="0.0001"
-                value={formData.latitude}
-                onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-                required
-              />
-              <Input
-                label="Longitude *"
-                type="number"
-                step="0.0001"
-                value={formData.longitude}
-                onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-                required
-              />
-            </div>
+            <LocationPicker
+              onValueChanged={handleLocationChange}
+              initialCoords={editingLocation ? { lng: parseFloat(formData.lng), lat: parseFloat(formData.lat) } : null}
+            />
             <Textarea
               label="Description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-            />
-            <Input
-              label="Region"
-              value={formData.region}
-              onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-            />
-            <Input
-              label="Country"
-              value={formData.country}
-              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
             />
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
               <Button type="button" variant="outline" onClick={handleCloseModal}>

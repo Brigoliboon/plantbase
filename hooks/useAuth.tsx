@@ -43,5 +43,10 @@ export function useAuth() {
     };
   }, []);
 
-  return { user, loading };
+  const logout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+  };
+
+  return { user, loading, logout };
 }

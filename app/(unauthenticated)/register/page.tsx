@@ -13,6 +13,7 @@ export default function SignUpPage() {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
+    phoneNumber: '',
     password: '',
     confirmPassword: '',
   });
@@ -48,6 +49,7 @@ export default function SignUpPage() {
         options: {
           data: {
             full_name: formData.fullName,
+            phone_number: formData.phoneNumber,
           },
         },
       });
@@ -97,6 +99,14 @@ export default function SignUpPage() {
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             placeholder="you@example.com"
+            required
+          />
+          <Input
+            label="Phone Number"
+            type="tel"
+            value={formData.phoneNumber}
+            onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+            placeholder="+1 (555) 123-4567"
             required
           />
           <Input

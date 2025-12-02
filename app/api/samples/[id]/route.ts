@@ -24,9 +24,9 @@ type RawSamplingLocation = Omit<SamplingLocation, 'coordinates'> & { coordinates
 type RawResearcher = Omit<Researcher, 'contact'> & { contact?: Record<string, unknown> | null };
 type RawEnvironmentalCondition = EnvironmentalCondition;
 type RawSample = Omit<PlantSample, 'sampling_location' | 'researcher' | 'environmental_condition'> & {
-  sampling_location?: SamplingLocation[] | null;
-  researcher?: RawResearcher[] | null;
-  environmental_condition?: RawEnvironmentalCondition[] | null;
+  sampling_location?: SamplingLocation[] | SamplingLocation | null;
+  researcher?: RawResearcher[] | RawResearcher | null;
+  environmental_condition?: RawEnvironmentalCondition[] | RawEnvironmentalCondition | null;
 };
 
 const parseCoordinates = (coordinates: CoordinateValue) => {
@@ -61,12 +61,18 @@ const parseCoordinates = (coordinates: CoordinateValue) => {
   return null;
 };
 
-const normalizeSample = (record: RawSample): PlantSample => ({
-  ...record,
-  sampling_location: Array.isArray(record.sampling_location) ? record.sampling_location[0] || null : record.sampling_location || null,
-  researcher: Array.isArray(record.researcher) ? (record.researcher[0] ? { ...record.researcher[0], contact: record.researcher[0].contact || {} } : null) : (record.researcher ? { ...record.researcher, contact: record.researcher.contact || {} } : null),
-  environmental_condition: Array.isArray(record.environmental_condition) ? record.environmental_condition[0] || null : record.environmental_condition || null,
-});
+const normalizeSample = (record: RawSample): PlantSample => {
+  const researcherData = Array.isArray(record.researcher) ? record.researcher[0] : record.researcher;
+  const samplingLocationData = Array.isArray(record.sampling_location) ? record.sampling_location[0] : record.sampling_location;
+  const environmentalConditionData = Array.isArray(record.environmental_condition) ? record.environmental_condition[0] : record.environmental_condition;
+
+  return {
+    ...record,
+    sampling_location: samplingLocationData || null,
+    researcher: researcherData ? { ...researcherData, contact: researcherData.contact || {} } : null,
+    environmental_condition: environmentalConditionData || null,
+  };
+};
 
 const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : 'Unexpected server error');
 

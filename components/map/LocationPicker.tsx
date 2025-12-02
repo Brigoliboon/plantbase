@@ -6,7 +6,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 const accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
-export default function LocationPicker({onValueChanged}:any) {
+export default function LocationPicker({onValueChanged, initialCoords}: {onValueChanged: (coords: {lng: number, lat: number}) => void, initialCoords?: {lng: number, lat: number} | null}) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
 
@@ -48,6 +48,12 @@ export default function LocationPicker({onValueChanged}:any) {
     }
 
     marker.on("dragend", onDragEnd);
+
+    // Set initial coords if provided
+    if (initialCoords) {
+      setCoords(initialCoords);
+      onValueChanged(initialCoords);
+    }
 
     return () => {
       mapRef.current?.remove();

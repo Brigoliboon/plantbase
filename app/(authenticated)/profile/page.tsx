@@ -333,13 +333,10 @@ export default function ProfilePage() {
             </p>
           </div>
           <p className="text-gray-700 dark:text-gray-300">
-            Are you sure you want to delete your account? Please type "DELETE" to confirm.
+            Are you sure you want to delete your account? Please type &quot;DELETE&quot; to confirm.
           </p>
           <Input
             placeholder="Type DELETE to confirm"
-            onChange={(e) => {
-              // Handle confirmation logic here if needed
-            }}
           />
         </div>
         <div className="flex justify-end gap-3 mt-6">

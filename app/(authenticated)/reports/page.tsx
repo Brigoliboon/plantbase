@@ -1,41 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import MainLayout from '@/app/(authenticated)/layout';
 import Button from '@/components/ui/Button';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Download, Filter } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { redirect } from 'next/navigation';
-
-// Mock data
-const samplesOverTime = [
-  { month: 'Jan', samples: 12 },
-  { month: 'Feb', samples: 19 },
-  { month: 'Mar', samples: 15 },
-  { month: 'Apr', samples: 24 },
-  { month: 'May', samples: 28 },
-  { month: 'Jun', samples: 26 },
-];
-
-const soilPhTrends = [
-  { date: 'Week 1', ph: 6.5 },
-  { date: 'Week 2', ph: 6.7 },
-  { date: 'Week 3', ph: 6.8 },
-  { date: 'Week 4', ph: 7.0 },
-  { date: 'Week 5', ph: 7.1 },
-];
-
-const temperatureHumidityTrends = [
-  { date: 'Jan', temperature: 15, humidity: 65 },
-  { date: 'Feb', temperature: 16, humidity: 68 },
-  { date: 'Mar', temperature: 18, humidity: 70 },
-  { date: 'Apr', temperature: 20, humidity: 72 },
-  { date: 'May', temperature: 22, humidity: 75 },
-];
+import { useReportsAnalytics } from './hooks/useReportsAnalytics';
 
 export default function ReportsPage() {
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [selectedLocation, setSelectedLocation] = useState('all');
+  const [selectedSpecies, setSelectedSpecies] = useState('all');
+
+  const { data: analyticsData, loading: analyticsLoading, error: analyticsError } = useReportsAnalytics({
+    timeRange: selectedFilter,
+    locationId: selectedLocation,
+    species: selectedSpecies,
+  });
 
   const handleExportCSV = () => {
     // TODO: Implement CSV export
@@ -46,10 +28,33 @@ export default function ReportsPage() {
     // TODO: Implement PDF export
     alert('PDF export functionality will be implemented');
   };
-  const { user, loading } = useAuth();
-  if (!user && !loading) redirect('/login');
+
+  const { user, loading: authLoading } = useAuth();
+  if (!user && !authLoading) redirect('/login');
+
+  if (analyticsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading analytics...</span>
+      </div>
+    );
+  }
+
+  if (analyticsError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-red-600">Error loading analytics</h2>
+          <p className="text-gray-600">{analyticsError}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { samplesOverTime, soilPhTrends, temperatureHumidityTrends, summaryStats } = analyticsData || {};
+
   return (
-    
       <div className="space-y-6">
         {/* Page Header */}
         <div className="flex items-center justify-between">
@@ -72,7 +77,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        {/* <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div className="flex flex-col md:flex-row gap-4 items-center">
             <div className="flex items-center gap-2">
               <Filter size={20} className="text-gray-400" />
@@ -89,6 +94,8 @@ export default function ReportsPage() {
               <option value="last-year">Last Year</option>
             </select>
             <select
+              value={selectedLocation}
+              onChange={(e) => setSelectedLocation(e.target.value)}
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               <option value="all">All Locations</option>
@@ -98,6 +105,8 @@ export default function ReportsPage() {
               <option value="west">West</option>
             </select>
             <select
+              value={selectedSpecies}
+              onChange={(e) => setSelectedSpecies(e.target.value)}
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               <option value="all">All Species</option>
@@ -106,7 +115,7 @@ export default function ReportsPage() {
               <option value="betula">Betula</option>
             </select>
           </div>
-        </div>
+        </div> */}
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -182,22 +191,22 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Samples</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">124</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{summaryStats?.totalSamples || 0}</p>
             <p className="text-sm text-green-600 dark:text-green-400 mt-2">+12% from last period</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg. Temperature</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">18.2°C</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{summaryStats?.avgTemperature || 0}°C</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Across all samples</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg. Humidity</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">70%</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{summaryStats?.avgHumidity || 0}%</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Across all samples</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg. Soil pH</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">6.8</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{summaryStats?.avgSoilPh || 0}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Across all samples</p>
           </div>
         </div>

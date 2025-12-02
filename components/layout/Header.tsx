@@ -1,16 +1,23 @@
 'use client';
 
-import { useAuth } from '@/hooks/useAuth';
 import { User as SupabaseUser} from '@supabase/supabase-js';
-import { User, LogOut, Bell } from 'lucide-react';
+import { User, LogOut, Bell, Link } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface HeaderProps {
   user: SupabaseUser | null;
+  logout: () => Promise<void>;
 }
-
-export default function Header({user}: HeaderProps) {
+export default function Header({user, logout}: HeaderProps) {
+  const router = useRouter();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const handleLogout = async () => {
+    await logout();
+    setShowProfileMenu(false);
+    router.push('/login');
+  };
   return (
     <header className="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
       <div className="flex items-center justify-between px-6 py-4 lg:ml-64">
@@ -43,11 +50,11 @@ export default function Header({user}: HeaderProps) {
 
             {showProfileMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2">
-                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                <button onClick={() => { router.push('/profile'); setShowProfileMenu(false); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
                   <User size={16} />
                   Profile
                 </button>
-                <button className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                <button className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2" onClick={handleLogout}>
                   <LogOut size={16} />
                   Logout
                 </button>

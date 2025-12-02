@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import MainLayout from '@/app/(authenticated)/layout';
 import {
   LineChart,
   Line,
@@ -17,23 +16,6 @@ import {
 } from 'recharts';
 import { Leaf, MapPin, Users, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
-import { redirect, useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-
-const samplesByRegion = [
-  { name: 'North', value: 45 },
-  { name: 'South', value: 32 },
-  { name: 'East', value: 28 },
-  { name: 'West', value: 19 },
-];
-
-const environmentalTrends = [
-  { date: 'Jan', temperature: 15, humidity: 65, soilPh: 6.5 },
-  { date: 'Feb', temperature: 16, humidity: 68, soilPh: 6.7 },
-  { date: 'Mar', temperature: 18, humidity: 70, soilPh: 6.8 },
-  { date: 'Apr', temperature: 20, humidity: 72, soilPh: 7.0 },
-  { date: 'May', temperature: 22, humidity: 75, soilPh: 7.1 },
-];
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
 
@@ -53,12 +35,16 @@ export default function DashboardPage() {
       sampling_location?: { name?: string | null; region?: string | null } | null;
       researcher?: { full_name: string } | null;
     }[];
+    samplesByRegion: { name: string; value: number }[];
+    environmentalTrends: { date: string; temperature: number; humidity: number; soilPh: number }[];
   }>({
     totalSamples: 0,
     totalLocations: 0,
     totalResearchers: 0,
     thisMonthSamples: 0,
     recentSamples: [],
+    samplesByRegion: [],
+    environmentalTrends: [],
   });
 
   useEffect(() => {
@@ -182,16 +168,16 @@ export default function DashboardPage() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={samplesByRegion}
+                  data={stats.samplesByRegion}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${percent ? (percent * 100).toFixed(0) : '0'}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {samplesByRegion.map((entry, index) => (
+                  {stats.samplesByRegion.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -206,7 +192,7 @@ export default function DashboardPage() {
               Environmental Trends
             </h2>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={environmentalTrends}>
+              <LineChart data={stats.environmentalTrends}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />

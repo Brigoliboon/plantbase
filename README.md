@@ -120,8 +120,9 @@ You can extend or use the REST API in external tools.
 
 - [x] CRUD/core UI flows
 - [x] Browser auth (sign in/up)
-- [X] Role-based/protected routes
-- [ ] Real-time data updates  
+- [x] Role-based/protected routes
+- [x] Header dropdown functionality (Profile and Logout)
+- [ ] Real-time data updates
 - [ ] filters/reporting
 
 ---

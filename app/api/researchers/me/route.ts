@@ -33,11 +33,13 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('auth_id', user.id)
       .single();
-
+    
+    console.log(user.id)
     if (error) throw error;
 
     return NextResponse.json(normalizeResearcher(data), { status: 200 });
   } catch (error) {
+    console.log(error)
     return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

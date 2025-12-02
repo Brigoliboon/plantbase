@@ -173,10 +173,10 @@ export default function ResearchersPage() {
               Manage researchers who collect samples
             </p>
           </div>
-          <Button onClick={() => handleOpenModal()}>
+          {/* <Button onClick={() => handleOpenModal()}>
             <Plus size={20} className="mr-2" />
             Add Researcher
-          </Button>
+          </Button> */}
         </div>
 
         {/* Filters */}
@@ -215,9 +215,9 @@ export default function ResearchersPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Affiliation
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Actions
-                  </th>
+                  </th> */}
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -269,7 +269,7 @@ export default function ResearchersPage() {
                         <span className="text-gray-400">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleOpenModal(researcher)}
@@ -284,7 +284,7 @@ export default function ResearchersPage() {
                           <Trash2 size={18} />
                         </button>
                       </div>
-                    </td>
+                    </td> */}
                     </tr>
                   ))
                 )}
