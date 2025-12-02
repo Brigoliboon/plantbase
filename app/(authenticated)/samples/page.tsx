@@ -438,7 +438,7 @@ export default function SamplesPage() {
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Location</h3>
               <LocationPicker
-                onValueChanged={setLocation}
+                onValueChanged={(coords) => setLocation(prev => prev ? { ...prev, ...coords } : { ...coords, desc: '' })}
               />
               <div className='flex flex-col mt-2 flex gap-2'>
                  <Input
